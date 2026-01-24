@@ -1,0 +1,23 @@
+version: "3.8"
+
+# Development конфигурация
+# Использование: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  backend:
+    environment:
+      DEBUG: "True"
+      FRONTEND_URL: http://localhost:3000
+    volumes:
+      - ./backend:/app/backend:ro
+    command: /bin/sh -c "pdm run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      - NODE_ENV=development

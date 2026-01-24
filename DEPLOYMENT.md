@@ -3,64 +3,110 @@
 ## Требования
 
 - Docker и Docker Compose установлены на сервере
-- Открытые порты: 80 (HTTP), 443 (HTTPS, опционально)
+- Открытые порты: 80 (HTTP), 443 (HTTPS для production)
 
-## Шаги развертывания
+## Production развертывание (с SSL и nginx-proxy)
 
-### 1. Клонирование репозитория
+### 1. Остановить и удалить старые контейнеры (если есть)
 
 ```bash
-git clone <your-repo-url> electro
-cd electro
+cd ~/electro
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
 ```
 
-### 2. Настройка переменных окружения
+### 2. Удалить старый volume PostgreSQL (ТОЛЬКО если нужна чистая БД)
 
-Создайте файл `.env` на основе `.env.example`:
+**⚠️ ВНИМАНИЕ**: Это удалит все данные базы данных!
 
 ```bash
-cp .env.example .env
+docker volume rm electro_postgres_data
+```
+
+### 3. Создать .env файл в корне проекта
+
+```bash
 nano .env
 ```
 
-**Важно:** Обязательно измените следующие параметры:
-- `POSTGRES_PASSWORD` - надежный пароль для базы данных
-- `SECRET_KEY` - случайная строка для JWT (можно сгенерировать: `openssl rand -hex 32`)
-- `FRONTEND_URL` - URL вашего домена (например, `http://your-domain.com` или `https://your-domain.com`)
+Добавить следующие переменные:
 
-### 3. Сборка и запуск контейнеров
+```env
+# PostgreSQL
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_secure_password_here
+POSTGRES_DB=electro_db
 
-```bash
-# Сборка образов
-docker-compose build
+# Backend
+SECRET_KEY=your_secret_key_here
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+DEBUG=False
+FRONTEND_URL=https://your-domain.com
 
-# Запуск в фоновом режиме
-docker-compose up -d
+# Superuser (опционально - создастся автоматически при запуске)
+SUPERUSER_USERNAME=admin
+SUPERUSER_PASSWORD=admin_password
+SUPERUSER_EMAIL=admin@example.com
+SUPERUSER_PLOT_NUMBER=ADMIN-001
+
+# Production - nginx-proxy и Let's Encrypt
+VIRTUAL_HOST=your-domain.com
+LETSENCRYPT_HOST=your-domain.com
+LETSENCRYPT_EMAIL=your-email@example.com
 ```
 
-### 4. Проверка статуса
+**Важно:**
+- Замените `your_secure_password_here` на надежный пароль
+- Сгенерируйте SECRET_KEY: `openssl rand -hex 32`
+- Укажите ваш реальный домен вместо `your-domain.com`
+- DNS запись домена должна указывать на IP сервера
+
+### 4. Запустить контейнеры в production режиме
 
 ```bash
-# Просмотр логов
-docker-compose logs -f
-
-# Проверка статуса контейнеров
-docker-compose ps
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-### 5. Создание суперпользователя
-
-Если вы не указали параметры суперпользователя в `.env`, создайте его вручную:
+### 5. Проверить статус и логи
 
 ```bash
-docker-compose exec backend pdm run python -m backend.cli create-superuser
+# Статус контейнеров
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+
+# Логи всех сервисов
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+
+# Логи конкретного сервиса
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f backend
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f nginx-proxy
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f letsencrypt
 ```
 
-## Доступ к приложению
+### 6. Создать суперпользователя (если не используете .env)
 
-- **Фронтенд:** http://your-server-ip или http://your-domain.com
-- **API документация:** http://your-server-ip/docs
-- **API:** http://your-server-ip/api
+```bash
+docker exec -it electro_backend pdm run python -m backend.cli create-superuser
+```
+
+## Development развертывание (локальная разработка)
+
+### 1. Создать .env файл
+
+```bash
+cp .env.example .env
+# Отредактировать .env с настройками для разработки
+```
+
+### 2. Запустить в режиме разработки
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+**Доступ:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
 ## Управление
 

@@ -19,7 +19,7 @@ COPY pyproject.toml pdm.lock* ./
 RUN pdm install --prod --no-lock --no-editable
 
 # Копирование кода приложения
-COPY backend/ ./backend/
+COPY backend/ ./
 COPY alembic.ini ./
 
 # Создание скрипта для запуска миграций и приложения
@@ -33,7 +33,7 @@ echo "Database is ready!"\n\
 echo "Running migrations..."\n\
 pdm run alembic upgrade head\n\
 echo "Starting application..."\n\
-pdm run uvicorn backend.main:app --host 0.0.0.0 --port 8000\n\
+pdm run uvicorn main:app --host 0.0.0.0 --port 8000\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
