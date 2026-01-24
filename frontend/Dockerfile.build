@@ -1,0 +1,20 @@
+# Dockerfile только для сборки статики
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Копирование package.json и package-lock.json
+COPY package*.json ./
+
+# Установка зависимостей
+RUN npm ci
+
+# Копирование исходного кода
+COPY . .
+
+# Сборка production билда
+RUN npm run build
+
+# Финальный этап - только артефакты
+FROM scratch
+COPY --from=build /app/dist /dist

@@ -1,10 +1,28 @@
 version: "3.8"
 
-# Production конфигурация с SSL и nginx-proxy
-# Использование: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Production конфигурация с SSL и nginx-proxy + статика фронтенда
+# Использование: docker-compose -f docker-compose.prod.yml up -d
 
 services:
   postgres:
+    image: postgres:15-alpine
+    container_name: electro_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-electro_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - electro_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    env_file:
+      - .env
     # Production настройки для PostgreSQL
     command: postgres -c max_connections=200 -c shared_buffers=256MB
     logging:
@@ -14,6 +32,43 @@ services:
         max-file: "3"
 
   backend:
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: electro_backend
+    environment:
+      # База данных
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-electro_db}
+      DB_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-electro_db}
+
+      # Приложение
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      FRONTEND_URL: https://${VIRTUAL_HOST}
+
+      # Суперпользователь (опционально)
+      SUPERUSER_USERNAME: ${SUPERUSER_USERNAME:-}
+      SUPERUSER_PASSWORD: ${SUPERUSER_PASSWORD:-}
+      SUPERUSER_EMAIL: ${SUPERUSER_EMAIL:-}
+      SUPERUSER_PLOT_NUMBER: ${SUPERUSER_PLOT_NUMBER:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - electro_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     logging:
       driver: "json-file"
       options:
@@ -28,12 +83,25 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  frontend:
-    environment:
-      # Настройки для nginx-proxy и Let's Encrypt
-      - VIRTUAL_HOST=${VIRTUAL_HOST}
-      - LETSENCRYPT_HOST=${LETSENCRYPT_HOST}
-      - VIRTUAL_PORT=80
+  # Nginx с статикой фронтенда + reverse proxy для API
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: electro_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Монтируем конфигурацию для возможности обновления без пересборки
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Volume для SSL сертификатов (можно использовать certbot)
+      - nginx_certs:/etc/nginx/certs:ro
+    networks:
+      - electro_network
+    restart: unless-stopped
+    depends_on:
+      - backend
     logging:
       driver: "json-file"
       options:
@@ -48,45 +116,23 @@ services:
           cpus: '0.25'
           memory: 256M
 
-  # Nginx reverse proxy с поддержкой SSL
-  nginx-proxy:
-    image: nginxproxy/nginx-proxy:alpine
-    container_name: electro_nginx_proxy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-      - nginx_certs:/etc/nginx/certs:ro
-      - nginx_vhost:/etc/nginx/vhost.d
-      - nginx_html:/usr/share/nginx/html
-    networks:
-      - electro_network
-    restart: unless-stopped
-    labels:
-      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
+  # Certbot для автоматического получения и обновления SSL сертификатов
+  # Раскомментируйте если нужен автоматический SSL
+  # certbot:
+  #   image: certbot/certbot:latest
+  #   container_name: electro_certbot
+  #   volumes:
+  #     - nginx_certs:/etc/letsencrypt
+  #     - certbot_www:/var/www/certbot
+  #   command: certonly --webroot --webroot-path=/var/www/certbot --email ${LETSENCRYPT_EMAIL} --agree-tos --no-eff-email -d ${VIRTUAL_HOST}
+  #   depends_on:
+  #     - nginx
 
-  # Let's Encrypt SSL сертификаты
-  letsencrypt:
-    image: nginxproxy/acme-companion
-    container_name: electro_letsencrypt
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - nginx_certs:/etc/nginx/certs
-      - nginx_vhost:/etc/nginx/vhost.d
-      - nginx_html:/usr/share/nginx/html
-      - acme_state:/etc/acme.sh
-    environment:
-      - DEFAULT_EMAIL=${LETSENCRYPT_EMAIL}
-      - NGINX_PROXY_CONTAINER=electro_nginx_proxy
-    networks:
-      - electro_network
-    restart: unless-stopped
-    depends_on:
-      - nginx-proxy
+networks:
+  electro_network:
+    driver: bridge
 
 volumes:
+  postgres_data:
   nginx_certs:
-  nginx_vhost:
-  nginx_html:
-  acme_state:
+  certbot_www:

@@ -5,13 +5,26 @@
 - Docker и Docker Compose установлены на сервере
 - Открытые порты: 80 (HTTP), 443 (HTTPS для production)
 
-## Production развертывание (с SSL и nginx-proxy)
+## Архитектура Production
+
+В production фронтенд раздается как **статика через nginx**:
+- Фронтенд собирается в Docker образе (multi-stage build)
+- Статические файлы копируются в nginx
+- Nginx раздает статику и проксирует API запросы к backend
+- Отдельный контейнер frontend НЕ запускается
+
+**Преимущества:**
+- Меньше контейнеров (экономия ресурсов)
+- Быстрее отдача статики
+- Проще настройка SSL
+
+## Production развертывание
 
 ### 1. Остановить и удалить старые контейнеры (если есть)
 
 ```bash
 cd ~/electro
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker-compose -f docker-compose.prod.yml down
 ```
 
 ### 2. Удалить старый volume PostgreSQL (ТОЛЬКО если нужна чистая БД)
@@ -49,9 +62,8 @@ SUPERUSER_PASSWORD=admin_password
 SUPERUSER_EMAIL=admin@example.com
 SUPERUSER_PLOT_NUMBER=ADMIN-001
 
-# Production - nginx-proxy и Let's Encrypt
+# Production - домен для SSL (опционально)
 VIRTUAL_HOST=your-domain.com
-LETSENCRYPT_HOST=your-domain.com
 LETSENCRYPT_EMAIL=your-email@example.com
 ```
 
@@ -64,22 +76,26 @@ LETSENCRYPT_EMAIL=your-email@example.com
 ### 4. Запустить контейнеры в production режиме
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
+
+Это запустит:
+- PostgreSQL (база данных)
+- Backend (FastAPI приложение)
+- Nginx (статика фронтенда + reverse proxy для API)
 
 ### 5. Проверить статус и логи
 
 ```bash
 # Статус контейнеров
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker-compose -f docker-compose.prod.yml ps
 
 # Логи всех сервисов
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+docker-compose -f docker-compose.prod.yml logs -f
 
 # Логи конкретного сервиса
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f backend
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f nginx-proxy
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f letsencrypt
+docker-compose -f docker-compose.prod.yml logs -f backend
+docker-compose -f docker-compose.prod.yml logs -f nginx
 ```
 
 ### 6. Создать суперпользователя (если не используете .env)
@@ -166,13 +182,56 @@ docker-compose exec postgres pg_dump -U postgres electro_db > backup_$(date +%Y%
 docker-compose exec -T postgres psql -U postgres electro_db < backup_file.sql
 ```
 
-## Настройка HTTPS с Let's Encrypt (опционально)
+## Настройка HTTPS с SSL сертификатами
 
-Для production рекомендуется использовать HTTPS. Добавьте nginx-proxy и certbot:
+### Вариант 1: Использование Certbot (рекомендуется)
+
+1. Раскомментируйте сервис `certbot` в `docker-compose.prod.yml`
+2. Обновите nginx конфигурацию на SSL версию:
 
 ```bash
-# Создайте docker-compose.prod.yml с nginx-proxy и certbot
-# Или используйте Traefik для автоматического SSL
+# Замените конфигурацию nginx на версию с SSL
+cp nginx/default-ssl.conf nginx/default.conf
+# Отредактируйте YOUR_DOMAIN на ваш домен
+nano nginx/default.conf
+```
+
+3. Получите SSL сертификат:
+
+```bash
+docker-compose -f docker-compose.prod.yml up certbot
+```
+
+4. Перезапустите nginx:
+
+```bash
+docker-compose -f docker-compose.prod.yml restart nginx
+```
+
+### Вариант 2: Cloudflare SSL
+
+Если используете Cloudflare:
+1. Включите SSL в панели Cloudflare (режим "Full" или "Full (strict)")
+2. Nginx будет работать на HTTP (порт 80)
+3. Cloudflare автоматически обеспечит HTTPS
+
+### Вариант 3: Внешний nginx
+
+Используйте nginx на хосте для SSL терминации:
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass http://localhost:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
 ```
 
 ## Мониторинг
