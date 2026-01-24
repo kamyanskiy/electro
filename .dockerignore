@@ -41,8 +41,7 @@ Thumbs.db
 .github/
 .gitlab-ci.yml
 
-# Frontend (excluded from backend build)
-frontend/
+# Frontend node_modules (excluded from builds)
 node_modules/
 
 # Plans and notes
