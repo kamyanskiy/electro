@@ -1,0 +1,116 @@
+.reading-history {
+  margin-top: 0;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.reading-history h3 {
+  color: #1a1a1a;
+  margin-bottom: 24px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.loading-text,
+.empty-text {
+  padding: 32px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 15px;
+  font-weight: 500;
+  background-color: #f9fafb;
+  border-radius: 10px;
+  border: 1.5px dashed #e5e7eb;
+}
+
+.table-container {
+  overflow-x: auto;
+  background: white;
+  border-radius: 12px;
+  border: 1.5px solid #f3f4f6;
+}
+
+.readings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.readings-table thead {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
+.readings-table th {
+  padding: 18px 20px;
+  text-align: left;
+  font-weight: 700;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.readings-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #1a1a1a;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.readings-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.readings-table tbody tr:hover {
+  background: linear-gradient(135deg, #f9fafb 0%, #f0f9ff 100%);
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.readings-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Zebra striping for better readability */
+.readings-table tbody tr:nth-child(even) {
+  background-color: #fafbfc;
+}
+
+.readings-table tbody tr:nth-child(even):hover {
+  background: linear-gradient(135deg, #f9fafb 0%, #f0f9ff 100%);
+}
+
+@media (max-width: 768px) {
+  .readings-table th,
+  .readings-table td {
+    padding: 12px 10px;
+    font-size: 13px;
+  }
+
+  .readings-table th {
+    font-size: 12px;
+  }
+
+  .reading-history h3 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .loading-text,
+  .empty-text {
+    padding: 24px;
+    font-size: 14px;
+  }
+}

@@ -1,0 +1,95 @@
+version: "3.8"
+
+# Production конфигурация с SSL и nginx-proxy
+# Использование: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    # Production настройки для PostgreSQL
+    command: postgres -c max_connections=200 -c shared_buffers=256MB
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  frontend:
+    ports: []  # Убираем пробрасывание портов - nginx-proxy управляет доступом
+    environment:
+      # Настройки для nginx-proxy и Let's Encrypt
+      - VIRTUAL_HOST=${VIRTUAL_HOST}
+      - LETSENCRYPT_HOST=${LETSENCRYPT_HOST}
+      - VIRTUAL_PORT=80
+    expose:
+      - "80"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Nginx reverse proxy с поддержкой SSL
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: electro_nginx_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - nginx_certs:/etc/nginx/certs:ro
+      - nginx_vhost:/etc/nginx/vhost.d
+      - nginx_html:/usr/share/nginx/html
+    networks:
+      - electro_network
+    restart: unless-stopped
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
+
+  # Let's Encrypt SSL сертификаты
+  letsencrypt:
+    image: nginxproxy/acme-companion
+    container_name: electro_letsencrypt
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nginx_certs:/etc/nginx/certs
+      - nginx_vhost:/etc/nginx/vhost.d
+      - nginx_html:/usr/share/nginx/html
+      - acme_state:/etc/acme.sh
+    environment:
+      - DEFAULT_EMAIL=${LETSENCRYPT_EMAIL}
+      - NGINX_PROXY_CONTAINER=electro_nginx_proxy
+    networks:
+      - electro_network
+    restart: unless-stopped
+    depends_on:
+      - nginx-proxy
+
+volumes:
+  nginx_certs:
+  nginx_vhost:
+  nginx_html:
+  acme_state:

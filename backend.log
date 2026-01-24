@@ -1,0 +1,38 @@
+INFO:     Will watch for changes in these directories: ['/Users/matrix/Projects/electro/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [70437] using StatReload
+INFO:     Started server process [70439]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:51689 - "GET /api/docs HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51729 - "GET /docs HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+ERROR:    Traceback (most recent call last):
+  File "/Users/matrix/Projects/electro/.venv/lib/python3.14/site-packages/starlette/routing.py", line 694, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+               ~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 221, in __aexit__
+    await anext(self.gen)
+  File "/Users/matrix/Projects/electro/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 153, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ~~~~~~~~~~~~~~~~^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 221, in __aexit__
+    await anext(self.gen)
+  File "/Users/matrix/Projects/electro/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 153, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ~~~~~~~~~~~~~~~~^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 221, in __aexit__
+    await anext(self.gen)
+  File "/Users/matrix/Projects/electro/.venv/lib/python3.14/site-packages/fastapi/routing.py", line 153, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ~~~~~~~~~~~~~~~~^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 221, in __aexit__
+    await anext(self.gen)
+  File "/Users/matrix/Projects/electro/backend/main.py", line 23, in lifespan
+    await container.shutdown_resources()
+TypeError: 'NoneType' object can't be awaited
+
+ERROR:    Application shutdown failed. Exiting.
+INFO:     Finished server process [70439]
+INFO:     Stopping reloader process [70437]
