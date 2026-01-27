@@ -7,7 +7,7 @@ from app.adapters.rest_api.schemas.users import UserResponse
 class LoginRequest(BaseModel):
     """Login request schema."""
 
-    username: str = Field(..., min_length=3, max_length=50, description="Username")
+    username: str = Field(..., min_length=3, max_length=50, description="Username or email")
     password: str = Field(..., min_length=6, description="Password")
 
     model_config = {
@@ -15,6 +15,10 @@ class LoginRequest(BaseModel):
             "examples": [
                 {
                     "username": "user123",
+                    "password": "password123"
+                },
+                {
+                    "username": "user@example.com",
                     "password": "password123"
                 }
             ]

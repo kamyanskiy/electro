@@ -19,6 +19,11 @@ class UsersRepository(ABC):
         ...
 
     @abstractmethod
+    async def get_by_email(self, email: str) -> User | None:
+        """Get user by email."""
+        ...
+
+    @abstractmethod
     async def add(self, user: User):
         """Add new user to database."""
         ...

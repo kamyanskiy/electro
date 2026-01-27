@@ -32,8 +32,12 @@ class AuthenticationService:
 
     async def authenticate(self, username: str, password: str) -> tuple[str, User]:
         """Authenticate user and return JWT token and user object."""
-        # Get user by username
+        # Get user by username or email
         user = await self.users_repo.get_by_username(username)
+        if not user:
+            # Try to get user by email if username not found
+            user = await self.users_repo.get_by_email(username)
+
         if not user:
             raise ValueError("Invalid credentials")
 

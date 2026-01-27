@@ -56,10 +56,10 @@ async def register_user(
     "/users/login",
     response_model=TokenResponse,
     summary="User login",
-    description="Authenticate user with username and password, returns JWT access token and user information."
+    description="Authenticate user with username or email and password, returns JWT access token and user information."
 )
 async def login_user(
-    username: str = Form(...),
+    username: str = Form(..., description="Username or email"),
     password: str = Form(...),
     auth_service: AuthenticationService = Depends(lambda: Container.authentication_service())
 ):
