@@ -86,11 +86,12 @@ async def check_reading_today(
 )
 async def get_readings(
     limit: int = Query(default=10, ge=1, le=100, description="Number of readings to return"),
+    offset: int = Query(default=0, ge=0, description="Number of readings to skip"),
     current_user: User = Depends(get_current_active_user),
     reading_service: ReadingService = Depends(lambda: Container.reading_service())
 ):
     """Get readings history for current user."""
-    readings = await reading_service.get_readings_by_user(current_user.id, limit)
+    readings = await reading_service.get_readings_by_user(current_user.id, limit, offset)
 
     reading_responses = [
         ReadingResponse(

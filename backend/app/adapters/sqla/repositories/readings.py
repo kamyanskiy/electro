@@ -19,7 +19,7 @@ class SqlAlchemyReadingsRepository(ReadingsRepository):
             session.add(reading)
             await session.commit()
 
-    async def get_by_user(self, user_id: UUID, limit: int = 10) -> list[Reading]:
+    async def get_by_user(self, user_id: UUID, limit: int = 10, offset: int = 0) -> list[Reading]:
         """Get readings for a specific user, ordered by date descending."""
         async with self.session_factory() as session:
             stmt = (
@@ -27,6 +27,7 @@ class SqlAlchemyReadingsRepository(ReadingsRepository):
                 .where(Reading.user_id == user_id)
                 .order_by(Reading.reading_date.desc())
                 .limit(limit)
+                .offset(offset)
             )
             result = await session.execute(stmt)
             return list(result.scalars().all())
