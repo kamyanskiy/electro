@@ -46,12 +46,16 @@ class SqlAlchemyUsersRepository(UsersRepository):
                 await session.commit()
             except IntegrityError as e:
                 await session.rollback()
-                error_msg = str(e.orig).lower()
-                if "plot_number" in error_msg:
+                detail = str(e.orig).lower()
+                constraint = getattr(
+                    e.orig, "constraint_name", ""
+                ) or ""
+                lookup = detail + constraint.lower()
+                if "plot_number" in lookup:
                     raise ValueError("Plot number already exists") from e
-                if "username" in error_msg:
+                if "username" in lookup:
                     raise ValueError("Username already exists") from e
-                if "email" in error_msg:
+                if "email" in lookup:
                     raise ValueError("Email already exists") from e
                 raise ValueError("User with these details already exists") from e
 

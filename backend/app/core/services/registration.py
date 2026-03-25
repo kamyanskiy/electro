@@ -27,6 +27,10 @@ class RegistrationService:
             raise ValueError(
                 "Password must be at least 8 characters long"
             )
+        if len(password.encode("utf-8")) > 72:
+            raise ValueError(
+                "Password must not exceed 72 bytes (bcrypt limit)"
+            )
         if not re.search(r"[A-Z]", password):
             raise ValueError(
                 "Password must contain at least one uppercase letter"
