@@ -66,7 +66,6 @@ class Container(containers.DeclarativeContainer):
 
     activation_service = providers.Factory(
         ActivationService,
-        users_repo=users_repo,
         uow=activation_uow,
     )
 

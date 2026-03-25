@@ -42,6 +42,11 @@ class ActivationUnitOfWork(ABC):
         ...
 
     @abstractmethod
+    async def get_inactive_users(self) -> list[User]:
+        """Get all inactive users awaiting activation."""
+        ...
+
+    @abstractmethod
     async def commit(self) -> None:
         """Commit all changes atomically."""
         ...

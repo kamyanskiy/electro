@@ -56,6 +56,12 @@ class SqlAlchemyActivationUnitOfWork(ActivationUnitOfWork):
         )
         await self._session.execute(stmt)
 
+    async def get_inactive_users(self) -> list[User]:
+        """Get all inactive users awaiting activation."""
+        stmt = select(User).where(User.is_active == False)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
     async def commit(self) -> None:
         await self._session.commit()
 

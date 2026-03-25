@@ -1,3 +1,5 @@
+import re
+
 from app.core.models.user import User
 from app.core.ports.users import UsersRepository
 from uuid import uuid4
@@ -25,8 +27,19 @@ class RegistrationService:
             raise ValueError(
                 "Password must be at least 8 characters long"
             )
+        if not re.search(r"[A-Z]", password):
+            raise ValueError(
+                "Password must contain at least one uppercase letter"
+            )
+        if not re.search(r"\d", password):
+            raise ValueError(
+                "Password must contain at least one digit"
+            )
 
     async def register_user(self, plot_number: str, username: str, email: str, password: str):
+        # Validate password first — reject bad input before DB round-trips
+        self._validate_password_strength(password)
+
         # Check uniqueness of plot number
         existing = await self.users_repo.get_by_plot_number(plot_number)
         if existing:
@@ -41,9 +54,6 @@ class RegistrationService:
         existing_email = await self.users_repo.get_by_email(email)
         if existing_email:
             raise ValueError("Email already exists")
-
-        # Validate password strength
-        self._validate_password_strength(password)
 
         # Hash password
         password_hash = hash_password(password)
