@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from config.settings import settings
 from app.adapters.sqla.repositories.users import SqlAlchemyUsersRepository
 from app.adapters.sqla.repositories.readings import SqlAlchemyReadingsRepository
-from app.adapters.sqla.repositories.activation import SqlAlchemyActivationRequestsRepository
 from app.adapters.sqla.uow import SqlAlchemyActivationUnitOfWork
 from app.core.services.registration import RegistrationService
 from app.core.services.authentication import AuthenticationService
@@ -40,11 +39,6 @@ class Container(containers.DeclarativeContainer):
 
     readings_repo = providers.Factory(
         SqlAlchemyReadingsRepository,
-        session_factory=session_factory
-    )
-
-    activation_repo = providers.Factory(
-        SqlAlchemyActivationRequestsRepository,
         session_factory=session_factory
     )
 

@@ -19,20 +19,27 @@ class SqlAlchemyActivationUnitOfWork(ActivationUnitOfWork):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        if exc_type:
-            await self.rollback()
-        await self._session.close()
+        try:
+            if exc_type:
+                await self.rollback()
+        finally:
+            await self._session.close()
 
     async def get_user(self, user_id: UUID) -> User | None:
         return await self._session.get(User, user_id)
 
     async def update_user(self, user: User) -> None:
+        # User is already tracked by this session (fetched via get_user),
+        # so dirty-tracking handles the flush automatically.
+        # merge() is only needed if the object came from outside this session.
         await self._session.merge(user)
 
     async def add_activation_record(
         self, user_id: UUID, activated_by: UUID
     ) -> None:
         now = datetime.now(UTC)
+        # For admin-initiated activations, request time = activation time
+        # (there is no separate "request" step in the current flow)
         stmt = activation_requests.insert().values(
             user_id=user_id,
             requested_at=now,
