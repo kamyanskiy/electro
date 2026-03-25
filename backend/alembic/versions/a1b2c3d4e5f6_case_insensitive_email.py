@@ -21,6 +21,9 @@ def upgrade() -> None:
     """Normalize existing emails and switch to case-insensitive unique index."""
     conn = op.get_bind()
 
+    # Lock table to prevent concurrent registrations during migration
+    conn.execute(sa.text("LOCK TABLE users IN EXCLUSIVE MODE"))
+
     # Check for duplicate emails when lowered
     dupes = conn.execute(
         sa.text(

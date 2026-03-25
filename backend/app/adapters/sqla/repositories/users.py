@@ -9,7 +9,6 @@ from app.core.ports.users import UsersRepository
 _CONSTRAINT_ERRORS: dict[str, str] = {
     "uq_users_plot_number": "Plot number already exists",
     "users_username_key": "Username already exists",
-    "users_email_key": "Email already exists",
     "uq_users_email_lower": "Email already exists",
 }
 
