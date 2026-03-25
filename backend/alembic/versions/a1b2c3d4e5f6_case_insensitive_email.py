@@ -48,6 +48,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Revert to case-sensitive unique constraint."""
+    """Revert to case-sensitive unique constraint.
+
+    NOTE: This does NOT restore original mixed-case email values.
+    The upgrade() permanently lowercases all emails. If rollback is
+    needed and original casing matters, restore from a DB backup.
+    """
     op.drop_index('uq_users_email_lower', 'users')
     op.create_unique_constraint('users_email_key', 'users', ['email'])
