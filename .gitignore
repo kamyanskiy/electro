@@ -32,3 +32,6 @@ ENV/
 Thumbs.db
 
 frontend/node_modules/
+
+# Worktrees
+.worktrees/
