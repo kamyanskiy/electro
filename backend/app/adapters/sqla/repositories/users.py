@@ -76,6 +76,7 @@ class SqlAlchemyUsersRepository(UsersRepository):
 
     async def update(self, user: User):
         """Update existing user."""
+        user.email = user.email.strip().lower()
         async with self.session_factory() as session:
             await session.merge(user)
             await session.commit()
