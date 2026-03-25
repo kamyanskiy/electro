@@ -34,7 +34,14 @@ class SqlAlchemyReadingsRepository(ReadingsRepository):
             rows = result.all()
 
             if not rows:
-                return [], 0
+                # Offset past end — still need accurate total for pagination
+                count_stmt = (
+                    select(func.count())
+                    .select_from(Reading)
+                    .where(Reading.user_id == user_id)
+                )
+                count_result = await session.execute(count_stmt)
+                return [], count_result.scalar_one()
 
             readings = [row[0] for row in rows]
             total = rows[0][1]
