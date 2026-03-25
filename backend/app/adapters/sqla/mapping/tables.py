@@ -27,7 +27,7 @@ users = Table(
     "users",
     metadata,
     Column("id", UUID, primary_key=True, server_default=text("gen_random_uuid()")),
-    Column("plot_number", String, nullable=False),
+    Column("plot_number", String, nullable=False, unique=True),
     Column("username", String, nullable=False, unique=True),
     Column("email", String, nullable=False, unique=True),
     Column("password_hash", String, nullable=False),

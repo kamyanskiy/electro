@@ -1,5 +1,6 @@
 from uuid import UUID
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.models.user import User
 from app.core.ports.users import UsersRepository
@@ -40,8 +41,19 @@ class SqlAlchemyUsersRepository(UsersRepository):
     async def add(self, user: User):
         """Add new user to database."""
         async with self.session_factory() as session:
-            session.add(user)
-            await session.commit()
+            try:
+                session.add(user)
+                await session.commit()
+            except IntegrityError as e:
+                await session.rollback()
+                error_msg = str(e.orig).lower()
+                if "plot_number" in error_msg:
+                    raise ValueError("Plot number already exists") from e
+                if "username" in error_msg:
+                    raise ValueError("Username already exists") from e
+                if "email" in error_msg:
+                    raise ValueError("Email already exists") from e
+                raise ValueError("User with these details already exists") from e
 
     async def update(self, user: User):
         """Update existing user."""
