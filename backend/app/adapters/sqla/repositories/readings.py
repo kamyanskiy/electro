@@ -20,40 +20,31 @@ class SqlAlchemyReadingsRepository(ReadingsRepository):
             await session.commit()
 
     async def get_by_user(self, user_id: UUID, limit: int = 10, offset: int = 0) -> tuple[list[Reading], int]:
-        """Get paginated readings and total count.
-
-        Uses COUNT(*) OVER() window function so count and page data
-        come from a single query. Falls back to a separate COUNT
-        when offset is past end of results. Both queries run within
-        session.begin() — under PostgreSQL's default READ COMMITTED
-        isolation, each statement sees its own snapshot, so the
-        fallback count may differ slightly under concurrent writes.
-        """
+        """Get paginated readings and total count atomically."""
         async with self.session_factory() as session:
-            async with session.begin():
-                total_count = func.count().over().label("total_count")
-                stmt = (
-                    select(Reading, total_count)
+            total_count = func.count().over().label("total_count")
+            stmt = (
+                select(Reading, total_count)
+                .where(Reading.user_id == user_id)
+                .order_by(Reading.reading_date.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            result = await session.execute(stmt)
+            rows = result.all()
+
+            if not rows:
+                count_stmt = (
+                    select(func.count())
+                    .select_from(Reading)
                     .where(Reading.user_id == user_id)
-                    .order_by(Reading.reading_date.desc())
-                    .limit(limit)
-                    .offset(offset)
                 )
-                result = await session.execute(stmt)
-                rows = result.all()
+                count_result = await session.execute(count_stmt)
+                return [], count_result.scalar_one()
 
-                if not rows:
-                    count_stmt = (
-                        select(func.count())
-                        .select_from(Reading)
-                        .where(Reading.user_id == user_id)
-                    )
-                    count_result = await session.execute(count_stmt)
-                    return [], count_result.scalar_one()
-
-                readings = [row[0] for row in rows]
-                total = rows[0][1]
-                return readings, total
+            readings = [row[0] for row in rows]
+            total = rows[0][1]
+            return readings, total
 
     async def get_by_user_and_date(self, user_id: UUID, reading_date: date) -> Reading | None:
         """Get reading for a specific user and date."""
