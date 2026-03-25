@@ -16,13 +16,13 @@ class ActivationService:
 
     async def activate_user(self, user_id: UUID, admin_id: UUID):
         async with self.uow as uow:
-            # Check admin privileges
+            # Check admin privileges (read-only, no lock needed)
             admin = await uow.get_user(admin_id)
             if not admin or admin.role != UserRole.ADMIN:
                 raise PermissionError("Only admins can activate users")
 
-            # Get user
-            user = await uow.get_user(user_id)
+            # Get user with lock to prevent concurrent activations
+            user = await uow.get_user_for_update(user_id)
             if not user:
                 raise ValueError("User not found")
 

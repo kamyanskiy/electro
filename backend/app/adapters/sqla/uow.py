@@ -27,6 +27,10 @@ class SqlAlchemyActivationUnitOfWork(ActivationUnitOfWork):
             await self._session.close()
 
     async def get_user(self, user_id: UUID) -> User | None:
+        """Get user by ID (read-only, no lock)."""
+        return await self._session.get(User, user_id)
+
+    async def get_user_for_update(self, user_id: UUID) -> User | None:
         """Get user with row-level lock to prevent TOCTOU race conditions."""
         stmt = select(User).where(User.id == user_id).with_for_update()
         result = await self._session.execute(stmt)

@@ -21,7 +21,12 @@ class ActivationUnitOfWork(ABC):
 
     @abstractmethod
     async def get_user(self, user_id: UUID) -> User | None:
-        """Get user by ID within this transaction."""
+        """Get user by ID within this transaction (read-only)."""
+        ...
+
+    @abstractmethod
+    async def get_user_for_update(self, user_id: UUID) -> User | None:
+        """Get user by ID with row-level lock for safe mutation."""
         ...
 
     @abstractmethod
