@@ -9,12 +9,8 @@ class ReadingsRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_user(self, user_id: UUID, limit: int = 10, offset: int = 0) -> list[Reading]:
-        ...
-
-    @abstractmethod
-    async def count_by_user(self, user_id: UUID) -> int:
-        """Count total readings for a user."""
+    async def get_by_user(self, user_id: UUID, limit: int = 10, offset: int = 0) -> tuple[list[Reading], int]:
+        """Get paginated readings and total count for a user."""
         ...
 
     @abstractmethod

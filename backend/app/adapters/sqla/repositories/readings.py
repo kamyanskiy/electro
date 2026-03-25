@@ -19,9 +19,13 @@ class SqlAlchemyReadingsRepository(ReadingsRepository):
             session.add(reading)
             await session.commit()
 
-    async def get_by_user(self, user_id: UUID, limit: int = 10, offset: int = 0) -> list[Reading]:
-        """Get readings for a specific user, ordered by date descending."""
+    async def get_by_user(self, user_id: UUID, limit: int = 10, offset: int = 0) -> tuple[list[Reading], int]:
+        """Get paginated readings and total count for a user in a single session."""
         async with self.session_factory() as session:
+            count_stmt = select(func.count()).select_from(Reading).where(Reading.user_id == user_id)
+            count_result = await session.execute(count_stmt)
+            total = count_result.scalar_one()
+
             stmt = (
                 select(Reading)
                 .where(Reading.user_id == user_id)
@@ -30,14 +34,9 @@ class SqlAlchemyReadingsRepository(ReadingsRepository):
                 .offset(offset)
             )
             result = await session.execute(stmt)
-            return list(result.scalars().all())
+            readings = list(result.scalars().all())
 
-    async def count_by_user(self, user_id: UUID) -> int:
-        """Count total readings for a user."""
-        async with self.session_factory() as session:
-            stmt = select(func.count()).select_from(Reading).where(Reading.user_id == user_id)
-            result = await session.execute(stmt)
-            return result.scalar_one()
+            return readings, total
 
     async def get_by_user_and_date(self, user_id: UUID, reading_date: date) -> Reading | None:
         """Get reading for a specific user and date."""

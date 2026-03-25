@@ -91,8 +91,7 @@ async def get_readings(
     reading_service: ReadingService = Depends(lambda: Container.reading_service())
 ):
     """Get readings history for current user."""
-    readings = await reading_service.get_readings_by_user(current_user.id, limit, offset)
-    total = await reading_service.count_readings_by_user(current_user.id)
+    readings, total = await reading_service.get_readings_by_user(current_user.id, limit, offset)
 
     reading_responses = [
         ReadingResponse(
