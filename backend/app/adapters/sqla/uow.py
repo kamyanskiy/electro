@@ -1,6 +1,7 @@
 from uuid import UUID
 from datetime import datetime, UTC
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.models.user import User
@@ -26,7 +27,10 @@ class SqlAlchemyActivationUnitOfWork(ActivationUnitOfWork):
             await self._session.close()
 
     async def get_user(self, user_id: UUID) -> User | None:
-        return await self._session.get(User, user_id)
+        """Get user with row-level lock to prevent TOCTOU race conditions."""
+        stmt = select(User).where(User.id == user_id).with_for_update()
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def update_user(self, user: User) -> None:
         # User is already tracked by this session (fetched via get_user),
