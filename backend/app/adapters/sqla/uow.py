@@ -14,8 +14,11 @@ class SqlAlchemyActivationUnitOfWork(ActivationUnitOfWork):
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
         self._session_factory = session_factory
+        self._session: AsyncSession | None = None
 
     async def __aenter__(self) -> "SqlAlchemyActivationUnitOfWork":
+        if self._session is not None:
+            raise RuntimeError("UnitOfWork is already active; do not re-enter")
         self._session = self._session_factory()
         return self
 
@@ -25,6 +28,7 @@ class SqlAlchemyActivationUnitOfWork(ActivationUnitOfWork):
                 await self.rollback()
         finally:
             await self._session.close()
+            self._session = None
 
     async def get_user(self, user_id: UUID) -> User | None:
         """Get user by ID (read-only, no lock)."""
