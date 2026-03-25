@@ -12,6 +12,13 @@ _CONSTRAINT_ERRORS: dict[str, str] = {
     "users_email_key": "Email already exists",
 }
 
+# Fallback keywords for drivers that don't expose constraint_name
+_FIELD_ERRORS: dict[str, str] = {
+    "plot_number": "Plot number already exists",
+    "username": "Username already exists",
+    "email": "Email already exists",
+}
+
 
 class SqlAlchemyUsersRepository(UsersRepository):
     """SQLAlchemy ORM implementation of UsersRepository."""
@@ -53,9 +60,15 @@ class SqlAlchemyUsersRepository(UsersRepository):
                 await session.commit()
             except IntegrityError as e:
                 await session.rollback()
+                # Prefer structured constraint_name (asyncpg)
                 constraint = getattr(e.orig, "constraint_name", None)
                 if constraint and constraint in _CONSTRAINT_ERRORS:
                     raise ValueError(_CONSTRAINT_ERRORS[constraint]) from e
+                # Fallback: match field name in error message (driver-portable)
+                detail = str(e.orig).lower()
+                for field, msg in _FIELD_ERRORS.items():
+                    if field in detail:
+                        raise ValueError(msg) from e
                 raise ValueError("User with these details already exists") from e
 
     async def update(self, user: User):

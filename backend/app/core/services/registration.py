@@ -44,8 +44,10 @@ class RegistrationService:
         # Validate password first — reject bad input before DB round-trips
         self._validate_password_strength(password)
 
-        # Normalize email to lowercase for case-insensitive uniqueness
+        # Normalize inputs
         email = email.strip().lower()
+        plot_number = plot_number.strip()
+        username = username.strip()
 
         # Pre-check uniqueness for better UX error messages.
         # These checks are racy under concurrent requests;
