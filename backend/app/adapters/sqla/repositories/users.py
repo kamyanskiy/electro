@@ -1,8 +1,23 @@
 from uuid import UUID
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.models.user import User
 from app.core.ports.users import UsersRepository
+
+
+_CONSTRAINT_ERRORS: dict[str, str] = {
+    "uq_users_plot_number": "Plot number already exists",
+    "users_username_key": "Username already exists",
+    "users_email_key": "Email already exists",
+}
+
+# Fallback keywords for drivers that don't expose constraint_name
+_FIELD_ERRORS: dict[str, str] = {
+    "plot_number": "Plot number already exists",
+    "username": "Username already exists",
+    "email": "Email already exists",
+}
 
 
 class SqlAlchemyUsersRepository(UsersRepository):
@@ -40,8 +55,21 @@ class SqlAlchemyUsersRepository(UsersRepository):
     async def add(self, user: User):
         """Add new user to database."""
         async with self.session_factory() as session:
-            session.add(user)
-            await session.commit()
+            try:
+                session.add(user)
+                await session.commit()
+            except IntegrityError as e:
+                await session.rollback()
+                # Prefer structured constraint_name (asyncpg)
+                constraint = getattr(e.orig, "constraint_name", None)
+                if constraint and constraint in _CONSTRAINT_ERRORS:
+                    raise ValueError(_CONSTRAINT_ERRORS[constraint]) from e
+                # Fallback: match field name in error message (driver-portable)
+                detail = str(e.orig).lower()
+                for field, msg in _FIELD_ERRORS.items():
+                    if field in detail:
+                        raise ValueError(msg) from e
+                raise ValueError("User with these details already exists") from e
 
     async def update(self, user: User):
         """Update existing user."""

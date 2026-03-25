@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from config.settings import settings
 from app.adapters.sqla.repositories.users import SqlAlchemyUsersRepository
 from app.adapters.sqla.repositories.readings import SqlAlchemyReadingsRepository
-from app.adapters.sqla.repositories.activation import SqlAlchemyActivationRequestsRepository
+from app.adapters.sqla.uow import SqlAlchemyActivationUnitOfWork
 from app.core.services.registration import RegistrationService
 from app.core.services.authentication import AuthenticationService
 from app.core.services.reading_service import ReadingService
@@ -42,9 +42,10 @@ class Container(containers.DeclarativeContainer):
         session_factory=session_factory
     )
 
-    activation_repo = providers.Factory(
-        SqlAlchemyActivationRequestsRepository,
-        session_factory=session_factory
+    # Unit of Work
+    activation_uow = providers.Factory(
+        SqlAlchemyActivationUnitOfWork,
+        session_factory=session_factory,
     )
 
     # Services
@@ -65,8 +66,7 @@ class Container(containers.DeclarativeContainer):
 
     activation_service = providers.Factory(
         ActivationService,
-        users_repo=users_repo,
-        activation_requests_repo=activation_repo
+        uow=activation_uow,
     )
 
     async def shutdown_resources(self):

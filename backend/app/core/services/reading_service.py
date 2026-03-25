@@ -37,8 +37,11 @@ class ReadingService:
         """Check if user has already submitted reading for today."""
         return await self.readings_repo.get_by_user_and_date(user_id, date.today())
 
-    async def get_readings_by_user(self, user_id: UUID, limit: int = 10, offset: int = 0):
-        return await self.readings_repo.get_by_user(user_id, limit)
+    async def get_readings_by_user(
+        self, user_id: UUID, limit: int = 10, offset: int = 0
+    ) -> tuple[list, int]:
+        """Get paginated readings and total count for a user."""
+        return await self.readings_repo.get_by_user(user_id, limit, offset)
 
     async def get_all_readings_by_month(self, year: int, month: int):
         """Get all readings for a specific month with user info."""
