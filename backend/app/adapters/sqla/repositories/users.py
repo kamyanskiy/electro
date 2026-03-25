@@ -54,9 +54,6 @@ class SqlAlchemyUsersRepository(UsersRepository):
 
     async def add(self, user: User):
         """Add new user to database."""
-        # Ensure email is always stored lowercase for consistency
-        # with the case-insensitive unique index
-        user.email = user.email.strip().lower()
         async with self.session_factory() as session:
             try:
                 session.add(user)
@@ -76,7 +73,6 @@ class SqlAlchemyUsersRepository(UsersRepository):
 
     async def update(self, user: User):
         """Update existing user."""
-        user.email = user.email.strip().lower()
         async with self.session_factory() as session:
             await session.merge(user)
             await session.commit()
