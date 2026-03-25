@@ -1,6 +1,6 @@
 from uuid import UUID
 from datetime import date
-from sqlalchemy import select, extract
+from sqlalchemy import select, extract, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.models.reading import Reading
 from app.core.models.user import User
@@ -31,6 +31,13 @@ class SqlAlchemyReadingsRepository(ReadingsRepository):
             )
             result = await session.execute(stmt)
             return list(result.scalars().all())
+
+    async def count_by_user(self, user_id: UUID) -> int:
+        """Count total readings for a user."""
+        async with self.session_factory() as session:
+            stmt = select(func.count()).select_from(Reading).where(Reading.user_id == user_id)
+            result = await session.execute(stmt)
+            return result.scalar_one()
 
     async def get_by_user_and_date(self, user_id: UUID, reading_date: date) -> Reading | None:
         """Get reading for a specific user and date."""

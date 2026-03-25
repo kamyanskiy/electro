@@ -40,6 +40,10 @@ class ReadingService:
     async def get_readings_by_user(self, user_id: UUID, limit: int = 10, offset: int = 0):
         return await self.readings_repo.get_by_user(user_id, limit, offset)
 
+    async def count_readings_by_user(self, user_id: UUID) -> int:
+        """Count total readings for a user."""
+        return await self.readings_repo.count_by_user(user_id)
+
     async def get_all_readings_by_month(self, year: int, month: int):
         """Get all readings for a specific month with user info."""
         return await self.readings_repo.get_all_by_month(year, month)

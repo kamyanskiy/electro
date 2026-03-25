@@ -13,6 +13,11 @@ class ReadingsRepository(ABC):
         ...
 
     @abstractmethod
+    async def count_by_user(self, user_id: UUID) -> int:
+        """Count total readings for a user."""
+        ...
+
+    @abstractmethod
     async def get_by_user_and_date(self, user_id: UUID, reading_date: date) -> Reading | None:
         ...
 
