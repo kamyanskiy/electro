@@ -6,6 +6,13 @@ from app.core.models.user import User
 from app.core.ports.users import UsersRepository
 
 
+_CONSTRAINT_ERRORS: dict[str, str] = {
+    "uq_users_plot_number": "Plot number already exists",
+    "users_username_key": "Username already exists",
+    "users_email_key": "Email already exists",
+}
+
+
 class SqlAlchemyUsersRepository(UsersRepository):
     """SQLAlchemy ORM implementation of UsersRepository."""
 
@@ -46,17 +53,9 @@ class SqlAlchemyUsersRepository(UsersRepository):
                 await session.commit()
             except IntegrityError as e:
                 await session.rollback()
-                detail = str(e.orig).lower()
-                constraint = getattr(
-                    e.orig, "constraint_name", ""
-                ) or ""
-                lookup = detail + constraint.lower()
-                if "plot_number" in lookup:
-                    raise ValueError("Plot number already exists") from e
-                if "username" in lookup:
-                    raise ValueError("Username already exists") from e
-                if "email" in lookup:
-                    raise ValueError("Email already exists") from e
+                constraint = getattr(e.orig, "constraint_name", None)
+                if constraint and constraint in _CONSTRAINT_ERRORS:
+                    raise ValueError(_CONSTRAINT_ERRORS[constraint]) from e
                 raise ValueError("User with these details already exists") from e
 
     async def update(self, user: User):

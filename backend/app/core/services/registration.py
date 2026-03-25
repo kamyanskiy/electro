@@ -44,6 +44,10 @@ class RegistrationService:
         # Validate password first — reject bad input before DB round-trips
         self._validate_password_strength(password)
 
+        # Pre-check uniqueness for better UX error messages.
+        # These checks are racy under concurrent requests;
+        # DB UNIQUE constraints are the actual enforcement layer.
+        #
         # Check uniqueness of plot number
         existing = await self.users_repo.get_by_plot_number(plot_number)
         if existing:
