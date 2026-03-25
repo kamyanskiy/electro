@@ -1,5 +1,5 @@
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.models.user import User
@@ -9,7 +9,7 @@ from app.core.ports.users import UsersRepository
 _CONSTRAINT_ERRORS: dict[str, str] = {
     "uq_users_plot_number": "Plot number already exists",
     "users_username_key": "Username already exists",
-    "users_email_key": "Email already exists",
+    "uq_users_email_lower": "Email already exists",
 }
 
 # Fallback keywords for drivers that don't expose constraint_name
@@ -46,9 +46,9 @@ class SqlAlchemyUsersRepository(UsersRepository):
             return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> User | None:
-        """Get user by email."""
+        """Get user by email (case-insensitive)."""
         async with self.session_factory() as session:
-            stmt = select(User).where(User.email == email)
+            stmt = select(User).where(func.lower(User.email) == email.lower())
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 

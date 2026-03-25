@@ -34,7 +34,6 @@ class SqlAlchemyReadingsRepository(ReadingsRepository):
             rows = result.all()
 
             if not rows:
-                # Offset past end — still need accurate total for pagination
                 count_stmt = (
                     select(func.count())
                     .select_from(Reading)
