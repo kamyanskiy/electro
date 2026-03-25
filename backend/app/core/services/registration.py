@@ -37,6 +37,11 @@ class RegistrationService:
         if existing_user:
             raise ValueError("Username already exists")
 
+        # Check uniqueness of email
+        existing_email = await self.users_repo.get_by_email(email)
+        if existing_email:
+            raise ValueError("Email already exists")
+
         # Validate password strength
         self._validate_password_strength(password)
 
