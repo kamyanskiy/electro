@@ -1,11 +1,17 @@
 from app.core.models.user import UserRole
+from app.core.ports.users import UsersRepository
 from app.core.ports.uow import ActivationUnitOfWork
 from uuid import UUID
 from datetime import datetime, UTC
 
 
 class ActivationService:
-    def __init__(self, uow: ActivationUnitOfWork):
+    def __init__(
+        self,
+        users_repo: UsersRepository,
+        uow: ActivationUnitOfWork,
+    ):
+        self.users_repo = users_repo
         self.uow = uow
 
     async def activate_user(self, user_id: UUID, admin_id: UUID):
@@ -40,5 +46,5 @@ class ActivationService:
         return user
 
     async def get_pending_users(self):
-        async with self.uow as uow:
-            return await uow.get_inactive_users()
+        """Get inactive users (read-only, uses regular repo)."""
+        return await self.users_repo.get_inactive_users()
