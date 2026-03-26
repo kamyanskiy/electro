@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Normalize existing emails and switch to case-insensitive unique index."""
-    conn = op.get_bind()
+    conn = op.get_context().bind
 
     # Lock table to prevent concurrent registrations during migration
     conn.execute(sa.text("LOCK TABLE users IN EXCLUSIVE MODE"))
