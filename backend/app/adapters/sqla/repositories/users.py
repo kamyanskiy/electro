@@ -54,6 +54,7 @@ class SqlAlchemyUsersRepository(UsersRepository):
 
     async def add(self, user: User):
         """Add new user to database."""
+        user.email = user.email.lower()
         async with self.session_factory() as session:
             try:
                 session.add(user)
@@ -73,6 +74,8 @@ class SqlAlchemyUsersRepository(UsersRepository):
 
     async def update(self, user: User):
         """Update existing user."""
+        if user.email:
+            user.email = user.email.lower()
         async with self.session_factory() as session:
             await session.merge(user)
             await session.commit()
