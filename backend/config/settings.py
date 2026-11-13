@@ -27,7 +27,11 @@ class Settings(BaseSettings):
     SUPERUSER_PLOT_NUMBER: str | None = None
 
     model_config = SettingsConfigDict(
-        env_file=str(Path(__file__).resolve().parent.parent / ".env"),
+        # Корневой .env (общий с docker-compose), затем backend/.env (переопределяет)
+        env_file=(
+            str(Path(__file__).resolve().parents[2] / ".env"),
+            str(Path(__file__).resolve().parent.parent / ".env"),
+        ),
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False
