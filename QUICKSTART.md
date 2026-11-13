@@ -30,8 +30,7 @@ pdm run alembic -c ../alembic.ini upgrade head
 
 ### 3. Создание суперпользователя (если еще не создан)
 ```bash
-cd backend
-pdm run python cli.py create-superuser
+pdm run create-superuser
 ```
 
 Для локальной разработки можно заполнить базу демо-данными (пароль у всех демо-пользователей `demo12345`):

@@ -30,7 +30,7 @@ license = {text = "MIT"}
 distribution = false
 
 [tool.pdm.scripts]
-create-superuser = {cmd = "python -m backend.cli create-superuser", working_dir = "."}
+create-superuser = {cmd = "python cli.py create-superuser", working_dir = "backend"}
 
 [dependency-groups]
 dev = [
