@@ -22,15 +22,16 @@ pdm install
 3. Настройте переменные окружения:
 
 ```bash
-cp backend/.env.example backend/.env
-# Отредактируйте backend/.env и установите необходимые значения
+cp .env.example .env
+# Отредактируйте .env и установите необходимые значения
+# (необязательный backend/.env переопределяет значения из корневого .env)
 ```
 
 4. Запустите миграции:
 
 ```bash
 cd backend
-alembic upgrade head
+alembic -c ../alembic.ini upgrade head
 ```
 
 ### Создание суперпользователя
@@ -39,7 +40,7 @@ alembic upgrade head
 
 **Способ 1: Автоматический (через .env)**
 
-Раскомментируйте и заполните переменные `SUPERUSER_*` в файле `backend/.env`:
+Раскомментируйте и заполните переменные `SUPERUSER_*` в файле `.env`:
 
 ```bash
 SUPERUSER_USERNAME=admin
