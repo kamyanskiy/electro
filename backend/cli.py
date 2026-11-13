@@ -149,5 +149,115 @@ def list_inactive_users():
     asyncio.run(_list_inactive_users())
 
 
+# Демо-садоводы: (username, plot_number, is_active)
+DEMO_USERS = [
+    ("ivanov", "12", True),
+    ("petrova", "15", True),
+    ("sidorov", "23", True),
+    ("kuznetsova", "31", True),
+    ("smirnov", "44", True),
+    ("volkova", "58", True),
+    ("morozov", "67", False),
+    ("lebedeva", "72", False),
+]
+
+
+@cli.command()
+@click.option('--password', default='demo12345', show_default=True, help='Password for all demo users')
+@click.option('--months', default=12, show_default=True, help='How many months of readings to generate')
+def seed_demo(password: str, months: int):
+    """Seed demo users with monthly meter readings (for local development).
+
+    Active users get one reading per month for the last N months, with
+    cumulative day/night values growing month to month. Inactive users
+    get no readings and show up as pending activation.
+    Users that already exist are skipped, so the command is safe to re-run.
+    """
+    import random
+    from datetime import date
+    from decimal import Decimal
+    from app.core.models.reading import Reading
+
+    rng = random.Random(42)
+
+    async def _seed_demo():
+        bind_mappers()
+
+        container = Container()
+        container.init_resources()
+
+        try:
+            users_repo = container.users_repo()
+            readings_repo = container.readings_repo()
+            password_hash = hash_password(password)
+            today = date.today()
+
+            created_users = 0
+            created_readings = 0
+
+            for username, plot_number, is_active in DEMO_USERS:
+                if await users_repo.get_by_username(username) or await users_repo.get_by_plot_number(plot_number):
+                    click.echo(f"Skip '{username}': already exists")
+                    continue
+
+                now = datetime.now(UTC)
+                user = User(
+                    id=uuid4(),
+                    plot_number=plot_number,
+                    username=username,
+                    email=f"{username}@example.com",
+                    password_hash=password_hash,
+                    role=UserRole.USER,
+                    is_active=is_active,
+                    created_at=now,
+                    activated_at=now if is_active else None,
+                )
+                await users_repo.add(user)
+                created_users += 1
+
+                if not is_active:
+                    continue
+
+                # Накопительные показания счётчика: стартовое значение + месячный расход
+                day_value = Decimal(rng.randint(1000, 9000))
+                night_value = Decimal(rng.randint(500, 4000))
+                for months_ago in range(months - 1, -1, -1):
+                    year, month = today.year, today.month - months_ago
+                    while month <= 0:
+                        year, month = year - 1, month + 12
+                    reading_day = min(rng.randint(18, 25), 28)
+                    reading_date = date(year, month, reading_day)
+                    if reading_date > today:
+                        continue
+
+                    # Зимой расход выше
+                    winter = month in (11, 12, 1, 2, 3)
+                    day_value += Decimal(rng.randint(250, 450) if winter else rng.randint(100, 250))
+                    night_value += Decimal(rng.randint(120, 220) if winter else rng.randint(50, 120))
+
+                    await readings_repo.add(Reading(
+                        id=None,  # Will be set by database
+                        user_id=user.id,
+                        day_reading=day_value,
+                        night_reading=night_value,
+                        reading_date=reading_date,
+                    ))
+                    created_readings += 1
+
+                click.echo(f"Created '{username}' (plot {plot_number}) with readings")
+
+            click.echo(f"\nDone: {created_users} user(s), {created_readings} reading(s) created.")
+            if created_users:
+                click.echo(f"Demo users password: {password}")
+
+        except Exception as e:
+            click.echo(f"Error seeding demo data: {str(e)}", err=True)
+        finally:
+            engine = container.engine()
+            await engine.dispose()
+
+    asyncio.run(_seed_demo())
+
+
 if __name__ == '__main__':
     cli()

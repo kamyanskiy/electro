@@ -24,7 +24,7 @@ class ReadingService:
         else:
             # Create new reading
             reading = Reading(
-                id=0,  # Will be set by database
+                id=None,  # Will be set by database
                 user_id=user.id,
                 day_reading=Decimal(str(day_reading)),
                 night_reading=Decimal(str(night_reading)),
